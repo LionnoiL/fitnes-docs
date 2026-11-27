@@ -45,9 +45,39 @@
   ul, ol { padding-left: 24px; }
   li { margin: 4px 0; }
   hr { border: none; border-top: 1px solid var(--border); margin: 32px 0; }
-  /* Зміст */
-  h2#зміст + ul { columns: 2; column-gap: 32px; }
-  @media (max-width: 640px) { h2#зміст + ul { columns: 1; } .wrap { padding: 20px 14px 64px; } }
+  /* Лівий сайдбар зі змістом */
+  :root { --sidebar-w: 300px; }
+  .sidebar {
+    position: fixed; top: 0; left: 0; bottom: 0; width: var(--sidebar-w);
+    overflow-y: auto; background: var(--bg-soft); border-right: 1px solid var(--border);
+    padding: 20px 16px 40px; font-size: 14px; line-height: 1.45; z-index: 20;
+    overscroll-behavior: contain;
+  }
+  .sidebar-title { font-weight: 700; font-size: 16px; margin-bottom: 12px; }
+  .sidebar-title a { color: #1f2328; }
+  .sidebar p { margin: 16px 0 4px; font-size: 12px; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); }
+  .sidebar ul { list-style: none; padding: 0; margin: 0; }
+  .sidebar li { margin: 0; }
+  .sidebar li a {
+    display: block; padding: 4px 8px; border-radius: 6px; color: #374151;
+    border-left: 3px solid transparent;
+  }
+  .sidebar li a:hover { background: #eaeef2; text-decoration: none; }
+  .sidebar li a.active { background: #e6f0ff; color: var(--accent); border-left-color: var(--accent); font-weight: 600; }
+  .wrap { margin-left: calc(var(--sidebar-w) + max(0px, (100vw - var(--sidebar-w) - 900px) / 2)); margin-right: auto; }
+  .menu-btn, .backdrop { display: none; }
+  @media (max-width: 1000px) {
+    .sidebar { transform: translateX(-100%); transition: transform .2s ease; box-shadow: 4px 0 16px rgba(0,0,0,.12); }
+    .sidebar.open { transform: none; }
+    .wrap { margin-left: auto; padding-top: 64px; }
+    .menu-btn {
+      display: block; position: fixed; top: 12px; left: 12px; z-index: 15;
+      background: #fff; border: 1px solid var(--border); border-radius: 8px;
+      padding: 8px 12px; font-size: 15px; cursor: pointer; box-shadow: 0 2px 8px rgba(0,0,0,.08);
+    }
+    .backdrop.open { display: block; position: fixed; inset: 0; background: rgba(0,0,0,.3); z-index: 18; }
+  }
+  @media (max-width: 640px) { .wrap { padding: 64px 14px 64px; } table { display: block; overflow-x: auto; } }
   .top-link {
     position: fixed; right: 20px; bottom: 20px; background: var(--accent); color: #fff;
     width: 44px; height: 44px; border-radius: 50%; display: flex; align-items: center;
@@ -57,15 +87,8 @@
 </style>
 </head>
 <body>
-<div class="wrap">
-<h1 id="інструкція-користувача--система-обліку-фітнес-центру">Інструкція користувача — Система обліку фітнес-центру</h1>
-<blockquote>
-<p>Покрокова інструкція для персоналу: ресепшеністів та адміністраторів.
-Документ розбитий за функціональними блоками — знайдіть потрібну дію у змісті.
-Актуально для версії програми 1.7.0 · оновлено 27.11.2026</p>
-</blockquote>
-<hr>
-<h2 id="зміст">Зміст</h2>
+<nav class="sidebar" id="sidebar" aria-label="Зміст">
+<div class="sidebar-title"><a href="#">Інструкція користувача</a></div>
 <p><strong>Основи</strong></p>
 <ul>
 <li><a href="#технічні-вимоги-до-пк">Технічні вимоги до ПК</a></li>
@@ -130,6 +153,16 @@
 <ul>
 <li><a href="#типові-помилки-та-рішення">Типові помилки та рішення</a></li>
 </ul>
+</nav>
+<button class="menu-btn" id="menu-btn" aria-label="Зміст" aria-controls="sidebar" aria-expanded="false">☰ Зміст</button>
+<div class="backdrop" id="backdrop"></div>
+<div class="wrap">
+<h1 id="інструкція-користувача--система-обліку-фітнес-центру">Інструкція користувача — Система обліку фітнес-центру</h1>
+<blockquote>
+<p>Покрокова інструкція для персоналу: ресепшеністів та адміністраторів.
+Документ розбитий за функціональними блоками — знайдіть потрібну дію у змісті.
+Актуально для версії програми 1.7.0 · оновлено 27.11.2026</p>
+</blockquote>
 <hr>
 <h2 id="технічні-вимоги-до-пк">Технічні вимоги до ПК</h2>
 <p>Система працює на одному комп’ютері-сервері (на ньому ж — каса ресепшену). Інсталятор сам розгортає все потрібне (вебсервер, базу даних PostgreSQL) — окремо встановлювати Python, Node.js чи PostgreSQL не треба.</p>
@@ -1236,5 +1269,48 @@ Add-Printer -Name "CBM1000" -DriverName "Generic / Text Only" -PortName "USB001"
 
 </div>
 <a href="#" class="top-link" title="Нагору" aria-label="Нагору">↑</a>
+<script>
+(function () {
+  var sidebar = document.getElementById('sidebar');
+  var btn = document.getElementById('menu-btn');
+  var backdrop = document.getElementById('backdrop');
+  function setOpen(open) {
+    sidebar.classList.toggle('open', open);
+    backdrop.classList.toggle('open', open);
+    btn.setAttribute('aria-expanded', open ? 'true' : 'false');
+  }
+  btn.addEventListener('click', function () { setOpen(!sidebar.classList.contains('open')); });
+  backdrop.addEventListener('click', function () { setOpen(false); });
+  sidebar.addEventListener('click', function (e) { if (e.target.closest('li a')) setOpen(false); });
+  document.addEventListener('keydown', function (e) { if (e.key === 'Escape') setOpen(false); });
+
+  // Підсвічування поточного розділу
+  var links = {};
+  sidebar.querySelectorAll('li a[href^="#"]').forEach(function (a) {
+    links[decodeURIComponent(a.getAttribute('href').slice(1))] = a;
+  });
+  var heads = Array.prototype.filter.call(document.querySelectorAll('.wrap h2[id]'), function (h) { return links[h.id]; });
+  var current = null;
+  function update() {
+    var y = window.scrollY + 120, found = heads[0];
+    for (var i = 0; i < heads.length; i++) { if (heads[i].offsetTop <= y) found = heads[i]; else break; }
+    var a = found && links[found.id];
+    if (a === current) return;
+    if (current) current.classList.remove('active');
+    current = a;
+    if (a) {
+      a.classList.add('active');
+      var r = a.getBoundingClientRect(), sr = sidebar.getBoundingClientRect();
+      if (r.top < sr.top + 40 || r.bottom > sr.bottom - 40) sidebar.scrollTop += r.top - sr.top - sr.height / 2;
+    }
+  }
+  var ticking = false;
+  window.addEventListener('scroll', function () {
+    if (!ticking) { ticking = true; requestAnimationFrame(function () { ticking = false; update(); }); }
+  }, { passive: true });
+  window.addEventListener('load', update);
+  update();
+})();
+</script>
 </body>
 </html>
